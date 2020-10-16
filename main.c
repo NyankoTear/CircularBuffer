@@ -14,44 +14,66 @@ typedef struct CirBufStr
     uint8_t* pCirBufMaxAddr;
 }CirBufStr;
 
-
-void CircularBufferManager(uint8_t* pCirBuf, uint16_t length)
+void GoToNextWriteBuffer(CirBufStr* pCirBuf)
 {
-    static uint8_t* pWriteBuf;
-    static uint8_t* pReadBuf;
-
-    static const uint8_t* pCirBufMinAddr;
-    static const uint8_t* pCirBufMaxAddr;
-
-    pWriteBuf = pCirBuf;
-    pReadBuf = pCirBuf;
-
-    pCirBufMinAddr = pCirBuf;
-    pCirBufMaxAddr = pCirBufMinAddr + length;
-
-    printf("\nEntering Circular Buffer Manager...\n");
-    printf("Argument pCirBuf pointer: %p\n", pCirBuf);
-    printf("Argument pCirBuf length: %i\n", length);
-    printf("pCirBufMinAddr: %p\n", pCirBufMinAddr);
-    printf("pCirBufMaxAddr: %p\n", pCirBufMaxAddr);
-
-    // Next step checker
-    if (pCirBuf < pCirBufMaxAddr)
+    // This function will skip when the buffer is full.
+    if (pCirBuf->pWriteBuf != pCirBuf->pReadBuf)
     {
-        pWriteBuf++;
-        pReadBuf++;
+        // Check if the write buffer reach the maximum address of the circular buffer.
+        // If it reaches, then the write buffer moves the minimum address of the circular buffer which is the starting point of the circular buffer array.
+        if (pCirBuf->pWriteBuf < pCirBuf->pCirBufMaxAddr)
+        {
+            pCirBuf->pWriteBuf = pCirBuf->pCirBufMinAddr;
+        }
+        else
+        {
+            (pCirBuf->pWriteBuf)++;
+        }
+
+        // After moving to the next address, check if the buffer is full.
+        if (pCirBuf->pWriteBuf == pCirBuf->pReadBuf)
+        {
+            printf("WARN: Buffer is full.");
+        }
     }
     else
     {
-        pWriteBuf = pCirBufMinAddr;
-        pReadBuf = pCirBufMinAddr;
+        printf("WARN: Buffer is full.");
+    }
+    
+}
+
+void GoToNextReadBuffer(CirBufStr* pCirBuf)
+{
+    // This function will skip when the buffer is empty.
+    if (pCirBuf->pReadBuf != pCirBuf->pWriteBuf)
+    {
+        // Check if the read buffer each the maximum address of the circular buffer.
+        // If it reaches, then the read buffer move the minimum address of the circular buffer which is the starting point of the ciruclar buffer array.
+        if (pCirBuf->pReadBuf < pCirBuf->pCirBufMaxAddr)
+        {
+            pCirBuf->pReadBuf = pCirBuf->pCirBufMinAddr;
+        }
+        else
+        {
+            (pCirBuf->pReadBuf)++;
+        }
+
+        // After moving to the next address, check if the buffer is empty.
+        if (pCirBuf->pReadBuf == pCirBuf->pWriteBuf)
+        {
+            printf("WARN: Buffer is empty.");
+        }
+    }
+    else
+    {
+        printf("WARN: Buffer is empty.");
     }
     
 }
 
 int main (void)
 {
-    uint8_t circularBuf[10];
     CirBufStr myCirBufStr;
 
     // Initialize myCirBufStr
@@ -60,17 +82,6 @@ int main (void)
     myCirBufStr.pReadBuf = myCirBufStr.cirBuf;
     myCirBufStr.pCirBufMinAddr = myCirBufStr.cirBuf;
     myCirBufStr.pCirBufMaxAddr = myCirBufStr.pCirBufMinAddr + myCirBufStr.cirBufLen;
-
-    // Debugging for circularBuf
-    for (uint16_t i = 0; i < sizeof(circularBuf) / sizeof(uint8_t); i++)
-    {
-        circularBuf[i] = i;
-    }
-
-    for (uint16_t i = 0; i < sizeof(circularBuf) / sizeof(uint8_t); i++)
-    {
-        printf("circularBuf[%i]: %p\n", i, &circularBuf[i]);
-    }
 
     // Debugging for myCirBufStr.cirBuf
     for (uint16_t i = 0; i < myCirBufStr.cirBufLen; i++)
@@ -83,8 +94,6 @@ int main (void)
     printf("myCirBufStr.pReadBuf: %p\n", myCirBufStr.pReadBuf);
     printf("myCirBufStr.pCifBufMinAddr: %p\n", myCirBufStr.pCirBufMinAddr);
     printf("myCirBufStr.pCifBufMaxAddr: %p\n", myCirBufStr.pCirBufMaxAddr);
-
-    CircularBufferManager(circularBuf, 10);
 
     return 0;
 }
