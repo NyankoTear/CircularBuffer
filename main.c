@@ -8,7 +8,8 @@
 typedef enum 
 {
     BUFFER_OK = 0, 
-    BUFFER_BUSY = 1
+    BUFFER_FULL = 1,
+    BUFFER_EMPTY = 2
 } CIRCULAR_BUFFER_STATUS;
 
 typedef struct BlockBufStr
@@ -25,18 +26,19 @@ typedef struct CirBufStr
     BlockBufStr pReadBuf;
     uint8_t* pCirBufMinAddr;
     uint8_t* pCirBufMaxAddr;
+    CIRCULAR_BUFFER_STATUS cirBufStatus;
 } CirBufStr;
 
 void GoToNextWriteBuffer(CirBufStr* pCirBuf);
 void GoToNextReadBuffer(CirBufStr* pCirBuf);
-CIRCULAR_BUFFER_STATUS WriteCircularBuffer(CirBufStr* pCirBuf, const char data);
-CIRCULAR_BUFFER_STATUS ReadCircularBuffer(CirBufStr* pCirBuf, char* data);
+uint8_t WriteCircularBuffer(CirBufStr* pCirBuf, const char data);
+uint8_t ReadCircularBuffer(CirBufStr* pCirBuf, char* data);
 void DebugPointerAddressCircularBufferStructure(const CirBufStr* pCirBuf);
 void DebugDataCircularBufferStructure(const CirBufStr* pCirBuf);
 
 int main (void)
 {
-    CirBufStr myCirBufStr = {.cirBufLen = CIRCULAR_BUFFER_LENGTH};
+    CirBufStr myCirBufStr = {.cirBufLen = CIRCULAR_BUFFER_LENGTH, .cirBufStatus = BUFFER_EMPTY};
     char writeData = 'A';
     char readData[1];
 
@@ -47,55 +49,6 @@ int main (void)
     myCirBufStr.pReadBuf.pBlockEndAddr = myCirBufStr.cirBuf + 1;
     myCirBufStr.pCirBufMinAddr = myCirBufStr.cirBuf;
     myCirBufStr.pCirBufMaxAddr = myCirBufStr.pCirBufMinAddr + myCirBufStr.cirBufLen;
-
-    DebugPointerAddressCircularBufferStructure(&myCirBufStr);
-
-    for (uint16_t i = 0; i < myCirBufStr.cirBufLen - 5; i++){
-        GoToNextReadBuffer(&myCirBufStr);
-    }
-
-    DebugPointerAddressCircularBufferStructure(&myCirBufStr);
-
-    // DebugPointerAddressCircularBufferStructure(&myCirBufStr);
-
-    // for (uint16_t i = 0; i < myCirBufStr.cirBufLen + 10; i++)
-    // {
-    //     WriteCircularBuffer(&myCirBufStr, writeData);
-    //     writeData++;
-    // }
-
-    // DebugDataCircularBufferStructure(&myCirBufStr);
-
-    // for (uint16_t i = 0; i < myCirBufStr.cirBufLen + 10; i++)
-    // {
-    //     if (ReadCircularBuffer(&myCirBufStr, readData) == BUFFER_OK)
-    //     {
-    //         printf("Read data: %c\n", readData[0]);
-    //     }
-    // }
-
-    // DebugPointerAddressCircularBufferStructure(&myCirBufStr);
-    // DebugDataCircularBufferStructure(&myCirBufStr);
-
-    // writeData = 'A';
-
-    // for (uint16_t i = 0; i < myCirBufStr.cirBufLen - 5; i++)
-    // {
-    //     WriteCircularBuffer(&myCirBufStr, writeData);
-    //     writeData++;
-    // }
-
-    // DebugDataCircularBufferStructure(&myCirBufStr);
-
-    // for (uint16_t i = 0; i < myCirBufStr.cirBufLen; i++)
-    // {
-    //     if (ReadCircularBuffer(&myCirBufStr, readData) == BUFFER_OK)
-    //     {
-    //         printf("Read data: %c\n", readData[0]);
-    //     }
-    // }
-
-    // DebugDataCircularBufferStructure(&myCirBufStr);
 
     return 0;
 }
@@ -136,83 +89,57 @@ void GoToNextReadBuffer(CirBufStr* pCirBuf)
     }
 }
 
-// CIRCULAR_BUFFER_STATUS WriteCircularBuffer(CirBufStr* pCirBuf, const char data)
-// {
-//     uint8_t* pNextBufAddr = (pCirBuf->pWriteBuf) + 1;
+uint8_t WriteCircularBuffer(CirBufStr* pCirBuf, const char data)
+{
+    // Check if the circular buffer is full.
+    if (pCirBuf->cirBufStatus != BUFFER_FULL)
+    {
+        *(pCirBuf->pWriteBuf.pBlockStartAddr) = data;
+        GoToNextWriteBuffer(pCirBuf);
+
+        if (pCirBuf->pWriteBuf.pBlockStartAddr != pCirBuf->pReadBuf.pBlockStartAddr)
+        {
+            pCirBuf->cirBufStatus = BUFFER_OK;
+        }
+        else
+        {
+            pCirBuf->cirBufStatus = BUFFER_FULL;
+        }
         
-//     // Check if the after buffer reach the maximum address of the circular buffer.
-//     // If it reaches, then the after buffer move the minimum address of the circular buffer which is the starting point of the circular buffer array.
-//     if (!(pNextBufAddr < pCirBuf->pCirBufMaxAddr))
-//     {
-//         pNextBufAddr = pCirBuf->pCirBufMinAddr;
-//     }
+        return 0;
+    }
+    else
+    {
+        printf("WARN: Buffer is full.\n");
+        return -1;
+    }
+}
 
-//     // DEBUG
-//     printf("pNextBufAddr: %p\n", pNextBufAddr);
-
-//     // Check if the circular buffer is full.
-//     if (pNextBufAddr == pCirBuf->pReadBuf)
-//     {
-//         if (pCirBuf->pWriteBuf == pCirBuf->pPreviousWriteBufAddr)
-//         {
-//             printf("WARN: Buffer is full.\n");
-//             return BUFFER_BUSY;
-//         }
-//         else
-//         {
-//             pCirBuf->pPreviousWriteBufAddr = pCirBuf->pWriteBuf;
-//             *(pCirBuf->pWriteBuf) = data;
-//         }
-//     }
-//     else
-//     {
-//         *(pCirBuf->pWriteBuf) = data;
-//         GoToNextWriteBuffer(pCirBuf);
-//         return BUFFER_OK;
-//     }
-// }
-
-// CIRCULAR_BUFFER_STATUS ReadCircularBuffer(CirBufStr* pCirBuf, char* data)
-// {
-//     if (pCirBuf->pReadBuf == pCirBuf->pWriteBuf)
-//     {
-//         if (pCirBuf->pReadBuf == pCirBuf->pPreviousReadBufAddr)
-//         {
-//             printf("WARN: Buffer is empty.\n");
-//             return BUFFER_BUSY;
-//         }
-//         else
-//         {
-//             pCirBuf->pPreviousReadBufAddr = pCirBuf->pReadBuf;
-//             const char cirBufData = *(pCirBuf->pReadBuf);
-//             *data = cirBufData;
-//             return BUFFER_OK;
-//         }
+uint8_t ReadCircularBuffer(CirBufStr* pCirBuf, char* data)
+{
+    // Check if the circular buffer is empty.
+    if (pCirBuf->cirBufStatus != BUFFER_EMPTY)
+    {
+        data[0] = (char)*(pCirBuf->pReadBuf.pBlockStartAddr);
+        GoToNextReadBuffer(pCirBuf);
         
-//     }
-//     else
-//     {
-//         const char cirBufData = *(pCirBuf->pReadBuf);
-//         *data = cirBufData;
-//         GoToNextReadBuffer(pCirBuf);
-//         return BUFFER_OK;
-//     }
-    
-
-
-
-//     // if (pCirBuf->pReadBuf != pCirBuf->pWriteBuf)
-//     // {
-//     //     const char cirBufData = *(pCirBuf->pReadBuf);
-//     //     *data = cirBufData;
-//     //     GoToNextReadBuffer(pCirBuf);
-//     //     return BUFFER_OK;
-//     // }
-//     // else
-//     // {
-//     //     return BUFFER_BUSY;
-//     // }
-// }
+        if (pCirBuf->pReadBuf.pBlockStartAddr != pCirBuf->pWriteBuf.pBlockStartAddr)
+        {
+            pCirBuf->cirBufStatus = BUFFER_OK;
+        }
+        else
+        {
+            pCirBuf->cirBufStatus = BUFFER_EMPTY;
+        }
+        
+        return 0;
+    }
+    else
+    {
+        printf("WARN: Buffer is empty.\n");
+        return -1;
+    }
+}
 
 void DebugPointerAddressCircularBufferStructure(const CirBufStr* pCirBuf)
 {
