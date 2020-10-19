@@ -41,22 +41,20 @@ int main (void)
     char readData[1];
 
     // Initialize myCirBufStr
-    myCirBufStr.pWriteBuf.pBlockStartAddr = myCirBufStr.cirBuf + 10;
+    myCirBufStr.pWriteBuf.pBlockStartAddr = myCirBufStr.cirBuf;
     myCirBufStr.pWriteBuf.pBlockEndAddr = myCirBufStr.cirBuf + 1;
     myCirBufStr.pReadBuf.pBlockStartAddr = myCirBufStr.cirBuf;
     myCirBufStr.pReadBuf.pBlockEndAddr = myCirBufStr.cirBuf + 1;
     myCirBufStr.pCirBufMinAddr = myCirBufStr.cirBuf;
     myCirBufStr.pCirBufMaxAddr = myCirBufStr.pCirBufMinAddr + myCirBufStr.cirBufLen;
 
-    printf("myCirBufStr.pWriteBuf.pBlockStartAddr: %p\n", myCirBufStr.pWriteBuf.pBlockStartAddr);
-    printf("Incremented address: %lx\n", (uint64_t)(myCirBufStr.pWriteBuf.pBlockStartAddr + 1));
-    // myCirBufStr.pWriteBuf.pBlockStartAddr = ((uint64_t)(myCirBufStr.pWriteBuf.pBlockStartAddr + 1)) % (uint64_t)myCirBufStr.cirBufLen;
-    // printf("myCirBufStr.pWriteBuf.pBlockStartAddr: %p\n", myCirBufStr.pWriteBuf.pBlockStartAddr);
-    // Debugging for myCirBufStr.cirBuf
-    // for (uint16_t i = 0; i < myCirBufStr.cirBufLen; i++)
-    // {
-    //     myCirBufStr.cirBuf[i] = i;
-    // }
+    DebugPointerAddressCircularBufferStructure(&myCirBufStr);
+
+    for (uint16_t i = 0; i < myCirBufStr.cirBufLen - 5; i++){
+        GoToNextReadBuffer(&myCirBufStr);
+    }
+
+    DebugPointerAddressCircularBufferStructure(&myCirBufStr);
 
     // DebugPointerAddressCircularBufferStructure(&myCirBufStr);
 
@@ -102,31 +100,41 @@ int main (void)
     return 0;
 }
 
-// void GoToNextWriteBuffer(CirBufStr* pCirBuf)
-// {
-//     pCirBuf->pWriteBuf.pBlockStartAddr = ((uint32_t)pCirBuf->pWriteBuf.pBlockStartAddr + 1) % pCirBuf->cirBufLen;
+void GoToNextWriteBuffer(CirBufStr* pCirBuf)
+{
+    ++(pCirBuf->pWriteBuf.pBlockStartAddr);
+    ++(pCirBuf->pWriteBuf.pBlockEndAddr);
 
-//     // Check if the write buffer reach the maximum address of the circular buffer.
-//     // If it reaches, then the write buffer moves the minimum address of the circular buffer which is the starting point of the circular buffer array.
-//     if (!(pCirBuf->pWriteBuf < pCirBuf->pCirBufMaxAddr))
-//     {
-//         pCirBuf->pWriteBuf = pCirBuf->pCirBufMinAddr;
-//     }
-// }
+    // Check if the write buffer reach the maximum address of the circular buffer.
+    // If it reaches, then the write buffer moves the minimum address of the circular buffer which is the starting point of the circular buffer array.
+    if (!(pCirBuf->pWriteBuf.pBlockStartAddr < pCirBuf->pCirBufMaxAddr))
+    {
+        pCirBuf->pWriteBuf.pBlockStartAddr = pCirBuf->pCirBufMinAddr;
+    }
 
-// void GoToNextReadBuffer(CirBufStr* pCirBuf)
-// {
-//     pCirBuf->pPreviousReadBufAddr = pCirBuf->pReadBuf;
+    if (!(pCirBuf->pWriteBuf.pBlockEndAddr < pCirBuf->pCirBufMaxAddr))
+    {
+        pCirBuf->pWriteBuf.pBlockEndAddr = pCirBuf->pCirBufMinAddr;
+    }
+}
 
-//     ++(pCirBuf->pReadBuf);
+void GoToNextReadBuffer(CirBufStr* pCirBuf)
+{
+    ++(pCirBuf->pReadBuf.pBlockStartAddr);
+    ++(pCirBuf->pReadBuf.pBlockEndAddr);
 
-//     // Check if the read buffer reach the maximum address of the circular buffer.
-//     // If it reaches, then the read buffer move the minimum address of the circular buffer which is the starting point of the ciruclar buffer array.
-//     if (!(pCirBuf->pReadBuf < pCirBuf->pCirBufMaxAddr))
-//     {
-//         pCirBuf->pReadBuf = pCirBuf->pCirBufMinAddr;
-//     }
-// }
+    // Check if the read buffer reach the maximum address of the circular buffer.
+    // If it reaches, then the read buffer move the minimum address of the circular buffer which is the starting point of the ciruclar buffer array.
+    if (!(pCirBuf->pReadBuf.pBlockStartAddr < pCirBuf->pCirBufMaxAddr))
+    {
+        pCirBuf->pReadBuf.pBlockStartAddr = pCirBuf->pCirBufMinAddr;
+    }
+    
+    if (!(pCirBuf->pReadBuf.pBlockEndAddr < pCirBuf->pCirBufMaxAddr))
+    {
+        pCirBuf->pReadBuf.pBlockEndAddr = pCirBuf->pCirBufMinAddr;
+    }
+}
 
 // CIRCULAR_BUFFER_STATUS WriteCircularBuffer(CirBufStr* pCirBuf, const char data)
 // {
@@ -206,20 +214,22 @@ int main (void)
 //     // }
 // }
 
-// void DebugPointerAddressCircularBufferStructure(const CirBufStr* pCirBuf)
-// {
-//     printf("\npCirBuf->cirBuf: %p\n", pCirBuf->cirBuf);
-//     printf("pCirBuf->pWriteBuf: %p\n", pCirBuf->pWriteBuf);
-//     printf("pCirBuf->pReadBuf: %p\n", pCirBuf->pReadBuf);
-//     printf("pCirBuf->pCifBufMinAddr: %p\n", pCirBuf->pCirBufMinAddr);
-//     printf("pCirBuf->pCifBufMaxAddr: %p\n", pCirBuf->pCirBufMaxAddr);
-// }
+void DebugPointerAddressCircularBufferStructure(const CirBufStr* pCirBuf)
+{
+    printf("\npCirBuf->cirBuf: %p\n", pCirBuf->cirBuf);
+    printf("pCirBuf->pWriteBuf.pBlockStartAddr: %p\n", pCirBuf->pWriteBuf.pBlockStartAddr);
+    printf("pCirBuf->pWriteBuf.pBlockEndAddr: %p\n", pCirBuf->pWriteBuf.pBlockEndAddr);
+    printf("pCirBuf->pReadBuf.pBlockStartAddr: %p\n", pCirBuf->pReadBuf.pBlockStartAddr);    
+    printf("pCirBuf->pReadBuf.pBlockEndAddr: %p\n", pCirBuf->pReadBuf.pBlockEndAddr);
+    printf("pCirBuf->pCifBufMinAddr: %p\n", pCirBuf->pCirBufMinAddr);
+    printf("pCirBuf->pCifBufMaxAddr: %p\n", pCirBuf->pCirBufMaxAddr);
+}
 
-// void DebugDataCircularBufferStructure(const CirBufStr* pCirBuf)
-// {
-//     printf("\n");
-//     for (uint16_t i = 0; i < pCirBuf->cirBufLen; i++)
-//     {
-//         printf("pCirBuf->cirBuf[%i]: %c\n", i, pCirBuf->cirBuf[i]);
-//     }
-// }
+void DebugDataCircularBufferStructure(const CirBufStr* pCirBuf)
+{
+    printf("\n");
+    for (uint16_t i = 0; i < pCirBuf->cirBufLen; i++)
+    {
+        printf("pCirBuf->cirBuf[%i]: %c\n", i, pCirBuf->cirBuf[i]);
+    }
+}
